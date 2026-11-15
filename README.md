@@ -1,3 +1,5 @@
+Site Link = https://buzdolabim.free.nf/giris.php
+
 # Buzdolabım — Akıllı Mutfak Envanter ve SKT Takip Sistemi
 
 **Ders:** İnternet Programcılığı I (PHP)
