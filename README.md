@@ -303,7 +303,7 @@ Videolar sitenin gerçek ekran kaydıdır; bir demo hesapla çekilmiştir. Şifr
 - "Şifremi unuttum" özelliği: Gmail SMTP ile e-posta gönderimi, token tablosu, sıfırlama sayfaları, yayındaki sitede doğru bağlantı adresinin seçilmesi
 - Kayıt / giriş / profil güvenlik iyileştirmeleri (şifre tekrarı, mevcut şifre kontrolü, zorunlu e-posta, e-posta ile giriş)
 - Giriş ekranındaki değişen vitrin paneli
-- Tanıtım videolarının (3 dk ve 30 sn) hazırlanması
+- Tanıtım videolarının 30 sn hazırlanması
 - README hazırlanması
 
 **Örnek istemler:**
