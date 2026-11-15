@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $yeniEposta       = trim($_POST['eposta'] ?? '');
     $yeniMutfakAdi    = trim($_POST['mutfak_adi'] ?? '');
     $yeniAvatarRenk   = $_POST['avatar_renk'] ?? '#141414';
+    $mevcutSifre      = $_POST['mevcut_sifre'] ?? '';
     $yeniSifre        = $_POST['yeni_sifre'] ?? '';
     $yeniSifreTekrar  = $_POST['yeni_sifre_tekrar'] ?? '';
 
@@ -51,8 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($yeniKullaniciAdi === '' || mb_strlen($yeniKullaniciAdi) < 3) {
         $hatalar[] = 'Kullanıcı adı en az 3 karakter olmalıdır.';
     }
-    if ($yeniEposta !== '' && !filter_var($yeniEposta, FILTER_VALIDATE_EMAIL)) {
-        $hatalar[] = 'Lütfen geçerli bir e-posta adresi girin.';
+    if (!gercekEpostaMi($yeniEposta) || mb_strlen($yeniEposta) > 150) {
+        $hatalar[] = 'Lütfen geçerli bir e-posta adresi girin (zorunlu; şifre sıfırlama bağlantısı buraya gönderilir).';
+    } elseif (mb_strtolower($yeniEposta) !== mb_strtolower($kullanici['eposta'])) {
+        foreach (kullanicilariEpostaIleBul($yeniEposta) as $baska) {
+            if (mb_strtolower($baska['kullanici_adi']) !== mb_strtolower($kullanici['kullanici_adi'])) {
+                $hatalar[] = 'Bu e-posta adresi başka bir hesapta kayıtlı.';
+                break;
+            }
+        }
     }
     if (!array_key_exists($yeniAvatarRenk, $renkSecenekleri)) {
         $yeniAvatarRenk = '#141414';
@@ -60,6 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (mb_strlen($yeniKullaniciAdi) > 50) {
         $hatalar[] = 'Kullanıcı adı en fazla 50 karakter olabilir.';
+    }
+    if (str_contains($yeniKullaniciAdi, '@')) {
+        $hatalar[] = 'Kullanıcı adında @ işareti kullanılamaz.';
     }
     if (mb_strtolower($yeniKullaniciAdi) !== mb_strtolower($eskiKullaniciAdi) && kullaniciBul($yeniKullaniciAdi) !== null) {
         $hatalar[] = 'Bu kullanıcı adı başka bir hesap tarafından kullanılıyor.';
@@ -71,7 +82,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($yeniSifre !== '' || $yeniSifreTekrar !== '') {
-        if (mb_strlen($yeniSifre) < 4) {
+        if ($mevcutSifre === '') {
+            $hatalar[] = 'Şifrenizi değiştirmek için mevcut şifrenizi girmelisiniz.';
+        } elseif ($dbKayit !== null && !password_verify($mevcutSifre, $dbKayit['sifre_hash'])) {
+            $hatalar[] = 'Mevcut şifreniz hatalı.';
+        } elseif (mb_strlen($yeniSifre) < 4) {
             $hatalar[] = 'Yeni şifre en az 4 karakter olmalıdır.';
         } elseif ($yeniSifre !== $yeniSifreTekrar) {
             $hatalar[] = 'Yeni şifre ve şifre tekrarı birbiriyle eşleşmiyor.';
@@ -241,8 +256,8 @@ require 'header.php';
 
             <div class="satir">
                 <label>
-                    E-posta Adresi
-                    <input type="email" name="eposta" value="<?= guvenli($kullanici['eposta']) ?>" placeholder="ornek@eposta.com">
+                    E-posta Adresi *
+                    <input type="email" name="eposta" value="<?= gercekEpostaMi($kullanici['eposta']) ? guvenli($kullanici['eposta']) : '' ?>" placeholder="ornek@gmail.com" maxlength="150" required<?= gercekEpostaMi($kullanici['eposta']) ? '' : ' autofocus' ?>>
                 </label>
 
                 <label>
@@ -276,13 +291,21 @@ require 'header.php';
 
             <div class="satir">
                 <label>
+                    Mevcut Şifre
+                    <input type="password" name="mevcut_sifre" placeholder="Şu anki şifreniz" autocomplete="current-password">
+                </label>
+                <span></span>
+            </div>
+
+            <div class="satir">
+                <label>
                     Yeni Şifre
-                    <input type="password" name="yeni_sifre" placeholder="En az 4 karakter">
+                    <input type="password" name="yeni_sifre" placeholder="En az 4 karakter" autocomplete="new-password">
                 </label>
 
                 <label>
                     Yeni Şifre (Tekrar)
-                    <input type="password" name="yeni_sifre_tekrar" placeholder="Yeni şifreyi tekrar yazın">
+                    <input type="password" name="yeni_sifre_tekrar" placeholder="Yeni şifreyi tekrar yazın" autocomplete="new-password">
                 </label>
             </div>
 

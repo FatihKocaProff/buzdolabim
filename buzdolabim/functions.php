@@ -88,6 +88,19 @@ function girisKontrol()
         exit;
     }
     gunlukSeriKontrol($kullaniciId);
+
+    if (!gercekEpostaMi($_SESSION['kullanici_hafta2']['eposta'] ?? '') && basename($_SERVER['SCRIPT_NAME']) !== 'profil.php') {
+        mesajKaydet('hata', 'Devam etmeden önce lütfen hesabınıza gerçek bir e-posta adresi ekleyin. Şifrenizi unutursanız sıfırlama bağlantısı bu adrese gönderilir.');
+        header('Location: profil.php');
+        exit;
+    }
+}
+
+function gercekEpostaMi($eposta)
+{
+    return is_string($eposta)
+        && filter_var($eposta, FILTER_VALIDATE_EMAIL) !== false
+        && !str_ends_with(strtolower($eposta), '@buzdolabim.local');
 }
 
 function guvenli($metin)
@@ -480,6 +493,7 @@ function csrfGecerliMi($gelen)
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !csrfGecerliMi($_POST['csrf'] ?? null)) {
     mesajKaydet('hata', 'Güvenlik doğrulaması başarısız oldu (sayfa çok uzun süre açık kalmış olabilir). Lütfen işlemi tekrar deneyin.');
-    header('Location: ' . basename($_SERVER['SCRIPT_NAME']));
+    $sorguMetni = $_SERVER['QUERY_STRING'] ?? '';
+    header('Location: ' . basename($_SERVER['SCRIPT_NAME']) . ($sorguMetni !== '' ? '?' . $sorguMetni : ''));
     exit;
 }

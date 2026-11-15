@@ -62,6 +62,16 @@ function db()
             FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+        $pdo->exec("CREATE TABLE IF NOT EXISTS sifre_sifirlama (
+            id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            kullanici_id   INT UNSIGNED NOT NULL,
+            token_hash     CHAR(64)     NOT NULL UNIQUE,
+            son_gecerlilik DATETIME     NOT NULL,
+            kullanildi     TINYINT(1)   NOT NULL DEFAULT 0,
+            olusturma      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
         if ((int) $pdo->query('SELECT COUNT(*) FROM kullanicilar')->fetchColumn() === 0) {
             kullaniciEkle('admin', '1234', 'Yönetici', 'admin@buzdolabim.local', 'Merkez Mutfak', '#141414');
             kullaniciEkle('ogrenci', '1234', 'Öğrenci Kullanıcı', 'ogrenci@kampus.edu.tr', 'Öğrenci Evi Mutfağı', '#16a34a');
@@ -90,11 +100,15 @@ function kullaniciEkle($kullaniciAdi, $sifre, $adSoyad, $eposta, $mutfakAdi = 'E
     ornekUrunleriYukle((int) $pdo->lastInsertId());
 }
 
-function kullaniciDogrula($kullaniciAdi, $sifre)
+function kullaniciDogrula($kimlik, $sifre)
 {
-    $k = kullaniciBul($kullaniciAdi);
-    if ($k !== null && password_verify($sifre, $k['sifre_hash'])) {
-        return $k;
+    $adaylar = str_contains($kimlik, '@')
+        ? kullanicilariEpostaIleBul($kimlik)
+        : array_filter([kullaniciBul($kimlik)]);
+    foreach ($adaylar as $k) {
+        if (password_verify($sifre, $k['sifre_hash'])) {
+            return $k;
+        }
     }
     return null;
 }
@@ -110,6 +124,55 @@ function kullaniciGuncelle($id, $kullaniciAdi, $adSoyad, $eposta, $mutfakAdi, $a
     $sql .= ' WHERE id = ?';
     $deger[] = $id;
     db()->prepare($sql)->execute($deger);
+}
+
+function kullanicilariEpostaIleBul($eposta)
+{
+    $sorgu = db()->prepare('SELECT * FROM kullanicilar WHERE LOWER(eposta) = LOWER(?)');
+    $sorgu->execute([$eposta]);
+    return $sorgu->fetchAll();
+}
+
+function sifirlamaTokeniOlustur($kullaniciId, $dakika)
+{
+    $token = bin2hex(random_bytes(32));
+    db()->prepare('INSERT INTO sifre_sifirlama (kullanici_id, token_hash, son_gecerlilik) VALUES (?, ?, ?)')
+        ->execute([$kullaniciId, hash('sha256', $token), date('Y-m-d H:i:s', time() + $dakika * 60)]);
+    return $token;
+}
+
+function sonSifirlamaIstekSayisi($kullaniciId, $dakika)
+{
+    $sorgu = db()->prepare('SELECT COUNT(*) FROM sifre_sifirlama WHERE kullanici_id = ? AND olusturma >= ?');
+    $sorgu->execute([$kullaniciId, date('Y-m-d H:i:s', time() - $dakika * 60)]);
+    return (int) $sorgu->fetchColumn();
+}
+
+function gecerliSifirlamaKaydi($token)
+{
+    if (!is_string($token) || !preg_match('/^[a-f0-9]{64}$/', $token)) {
+        return null;
+    }
+    $sorgu = db()->prepare('SELECT s.id, s.kullanici_id, k.kullanici_adi, k.ad_soyad
+        FROM sifre_sifirlama s JOIN kullanicilar k ON k.id = s.kullanici_id
+        WHERE s.token_hash = ? AND s.kullanildi = 0 AND s.son_gecerlilik >= ? LIMIT 1');
+    $sorgu->execute([hash('sha256', $token), date('Y-m-d H:i:s')]);
+    return $sorgu->fetch() ?: null;
+}
+
+function sifreyiSifirla($kullaniciId, $yeniSifre)
+{
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('UPDATE kullanicilar SET sifre_hash = ? WHERE id = ?')
+            ->execute([password_hash($yeniSifre, PASSWORD_DEFAULT), $kullaniciId]);
+        $pdo->prepare('UPDATE sifre_sifirlama SET kullanildi = 1 WHERE kullanici_id = ?')->execute([$kullaniciId]);
+        $pdo->commit();
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
 }
 
 function oturumKullanicisi($k)
