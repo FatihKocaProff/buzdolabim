@@ -278,7 +278,6 @@ function tazelikYuzdesi($skt)
     return max(18, min(100, (int) round(($kalan / 14) * 100)));
 }
 
-// Raf ömrü çubuğu için artan yüzde: SKT yaklaştıkça dolar, bozulunca %100 olur.
 function rafOmruDolulukYuzdesi($skt)
 {
     $kalan = kalanGun($skt);

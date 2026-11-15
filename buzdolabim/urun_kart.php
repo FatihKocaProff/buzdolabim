@@ -4,7 +4,6 @@ $durum          = urunDurumu($urun['skt']);
 $durumCss       = durumSinifi($durum);
 $katCss         = kategoriSinifi($urun['kategori']);
 $yuzde          = rafOmruDolulukYuzdesi($urun['skt']);
-// Renk tarihe göre kademeli: yeşil (120) → sarı (60) → kırmızı (0)
 $dolguTon       = max(0, min(120, (int) round(120 * (100 - $yuzde) / 94)));
 $kartAramaMetni = mb_strtolower($urun['urun'] . ' ' . $urun['kategori'] . ' ' . $urun['miktar'] . ' ' . $urun['aciklama'], 'UTF-8');
 $sutunGecikme   = ($sira % 3) * 210;

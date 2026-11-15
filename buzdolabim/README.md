@@ -102,6 +102,6 @@ buzdolabim-hafta22/
 **Örnek istem:**
 > “Verileri sıfırla dediğimiz zaman günlük seri ile XP de sıfırlansın mı diye sorsun, şimdilik test aşamasında olduğu için.”
 
-**Kendi katkılarım:** _Proje konusunu seçme, sayfa yapısını ve özellikleri belirleme, kodları test etme, hataları bildirme ve düzeltmeleri kontrol etme, ... (kendi cümlelerinizle doldurun)_
+**Kendi katkılarım:** _Proje konusunu seçme,giriş.php,ekleme.php,ürünler.php Alt yapısını geliştirdim, sayfa yapısını ve özellikleri belirleme, kodları test etme, hataları bildirme ve düzeltmeleri kontrol etme.
 
 

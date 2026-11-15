@@ -13,12 +13,17 @@ function db()
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
+        PDO::ATTR_TIMEOUT            => 5,
     ];
 
     try {
-        $pdo = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';charset=utf8mb4', DB_KULLANICI, DB_SIFRE, $secenekler);
-        $pdo->exec('CREATE DATABASE IF NOT EXISTS `' . DB_ADI . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        $pdo->exec('USE `' . DB_ADI . '`');
+        try {
+            $pdo = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_ADI . ';charset=utf8mb4', DB_KULLANICI, DB_SIFRE, $secenekler);
+        } catch (PDOException $ilk) {
+            $pdo = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';charset=utf8mb4', DB_KULLANICI, DB_SIFRE, $secenekler);
+            $pdo->exec('CREATE DATABASE IF NOT EXISTS `' . DB_ADI . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+            $pdo->exec('USE `' . DB_ADI . '`');
+        }
 
         $pdo->exec("CREATE TABLE IF NOT EXISTS kullanicilar (
             id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -69,7 +74,6 @@ function db()
     return $pdo;
 }
 
-
 function kullaniciBul($kullaniciAdi)
 {
     $sorgu = db()->prepare('SELECT * FROM kullanicilar WHERE LOWER(kullanici_adi) = LOWER(?) LIMIT 1');
@@ -119,7 +123,6 @@ function oturumKullanicisi($k)
         'avatar_renk'   => $k['avatar_renk'],
     ];
 }
-
 
 function aktifKullaniciId()
 {
@@ -203,7 +206,6 @@ function ornekUrunleriYukle($kullaniciId)
         throw $e;
     }
 }
-
 
 const XP_GUNLUK_TEMEL   = 10;
 const XP_SERI_BONUSU    = 5;
